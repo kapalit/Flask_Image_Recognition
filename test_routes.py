@@ -167,6 +167,7 @@ def test_image_with_wrong_extension_is_still_predicted(client, fake_model):
         content_type="multipart/form-data",
     )
     assert b">3</h2>" in response.data
+    assert len(fake_model) == 1
 
 
 def test_model_failure_shows_error(client, monkeypatch):

@@ -34,8 +34,10 @@ def test_preprocess_output_shape_and_dtype():
 
 def test_preprocess_scales_pixels_to_unit_range():
     """Pixel values are divided by 255: white becomes 1.0, black becomes 0.0."""
-    assert np.allclose(preprocess_img(image_file(color=255)), 1.0)
-    assert np.allclose(preprocess_img(image_file(color=0)), 0.0)
+    # RGB colours must be a 3-tuple: Image.new("RGB", ..., color=255) only fills
+    # the red channel, which originally made this test fail with [1, 0, 0] pixels.
+    assert np.allclose(preprocess_img(image_file(color=(255, 255, 255))), 1.0)
+    assert np.allclose(preprocess_img(image_file(color=(0, 0, 0))), 0.0)
 
 
 def test_preprocess_accepts_file_path():
