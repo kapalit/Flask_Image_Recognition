@@ -1,7 +1,24 @@
+# Pre-commit hooks: run automatically on `git commit` (install once with `pre-commit install`).
+# Run manually on every file with: pre-commit run --all-files
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.4.0  # Use the latest stable version
+    rev: v5.0.0
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
+      - id: trailing-whitespace        # strip spaces at line ends
+      - id: end-of-file-fixer          # every file ends with exactly one newline
+      - id: check-yaml                 # validate the workflow / config YAML
+      - id: check-merge-conflict       # block leftover <<<<<<< markers
+      - id: check-added-large-files    # stop accidental model/dataset commits
+        args: ["--maxkb=1024"]
+      - id: debug-statements           # block forgotten breakpoint()/pdb imports
+
+  # Pylint runs from the project's own virtual environment (language: system) so it
+  # can import Flask, Keras and TensorFlow and uses the same .pylintrc as CI.
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [python]
+        require_serial: true
