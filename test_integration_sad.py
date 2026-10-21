@@ -1,8 +1,8 @@
-# test_integration_sad.py
+"""Integration tests: invalid requests to the prediction route."""
 
 import pytest
+
 from app import app
-from io import BytesIO
 
 @pytest.fixture
 def client():
