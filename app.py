@@ -1,31 +1,36 @@
-# Importing required libs
+"""Flask web application that predicts hand-sign digits from uploaded images."""
+
 from flask import Flask, render_template, request
+from PIL import UnidentifiedImageError
+
 from model import preprocess_img, predict_result
 
-# Instantiating flask app
 app = Flask(__name__)
 
+ERROR_MESSAGE = "File cannot be processed."
 
-# Home route
+
 @app.route("/")
 def main():
+    """Render the home page containing the image upload form."""
     return render_template("index.html")
 
 
-# Prediction route
-@app.route('/prediction', methods=['POST'])
+@app.route("/prediction", methods=["POST"])
 def predict_image_file():
+    """Preprocess the uploaded image, run the model and render the predicted digit.
+
+    Any request without a readable image (missing "file" field, empty upload,
+    non-image or corrupt file) renders the result page with an error message.
+    """
     try:
-        if request.method == 'POST':
-            img = preprocess_img(request.files['file'].stream)
-            pred = predict_result(img)
-            return render_template("result.html", predictions=str(pred))
+        img = preprocess_img(request.files["file"].stream)
+        pred = predict_result(img)
+    except (KeyError, UnidentifiedImageError, OSError, ValueError):
+        return render_template("result.html", err=ERROR_MESSAGE)
 
-    except:
-        error = "File cannot be processed."
-        return render_template("result.html", err=error)
+    return render_template("result.html", predictions=str(pred))
 
 
-# Driver code
 if __name__ == "__main__":
     app.run(port=9000, debug=True)
