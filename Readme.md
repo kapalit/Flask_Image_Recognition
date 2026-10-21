@@ -1,5 +1,7 @@
 # Hand Digit Image Recognition
 
+[![CI](https://github.com/kapalit/Flask_Image_Recognition/actions/workflows/ci.yml/badge.svg)](https://github.com/kapalit/Flask_Image_Recognition/actions/workflows/ci.yml)
+
 This web app is made using Flask framework and is all about predicting the hand sign digit images based on the deep learning model trained using transfer learning.
 
 ![Python](https://img.shields.io/badge/python-8338ec)
@@ -26,34 +28,53 @@ https://user-images.githubusercontent.com/72191416/201943098-c8f5fd8b-ec7d-4e5d-
 
 # Get Started
 
-Clone the repository in your project directory.
+Requires **Python 3.11 (64-bit)** and Git. The pinned versions in `requirements.txt`
+(TensorFlow/Keras 2.15) support Python 3.9-3.11.
 
 ```commandline
-git clone https://github.com/Sachin-crypto/Flask_Image_Recognition.git
+git clone https://github.com/kapalit/Flask_Image_Recognition.git
+cd Flask_Image_Recognition
+py -3.11 -m venv venv
+venv\Scriptsctivate
+python -m pip install --upgrade pip
+pip install -r requirements-dev.txt
 ```
-OR
 
-Download as **[ZIP](https://github.com/Sachin-crypto/Flask_Image_Recognition/archive/refs/heads/main.zip)** file and extract it in your project directory.
-
-# Install Dependencies
-
-Install the dependencies from the **requirements.txt** file.
-
-```commandline
-pip install -r requirements.txt
-```
+`requirements.txt` holds the runtime dependencies; `requirements-dev.txt` adds
+Pylint, pre-commit and pytest-cov for development.
 
 # Run
 
-**cd** into the current directory and run the script.
+```commandline
+python -m flask --app app run
+```
+
+Open http://127.0.0.1:5000, choose an image from the `test_images` folder, check the
+preview and click **Submit** to see the predicted digit.
+
+# Code Quality
 
 ```commandline
-flask --app app.py run --debug
+pylint app.py model.py conftest.py test_*.py
+pre-commit install          # once per clone: run hooks on every commit
+pre-commit run --all-files  # run every hook manually
 ```
-Click [here](https://geekpython.in/run-flask-app-from-the-command-line-in-windows) to get the detailed guide on running the Flask app from the command line.
 
-# Test
+Pylint settings live in `.pylintrc` (fails below a 9.0 score). Pre-commit runs
+whitespace/end-of-file/YAML/large-file checks and Pylint (`.pre-commit-config.yaml`).
 
-- Choose an image from the test images folder.
-- You will see a preview of the uploaded image.
-- Click on **Submit** button and see the magic.
+# Tests
+
+```commandline
+pytest
+```
+
+- `test_routes.py` - Flask routes with the model mocked (valid, missing and invalid uploads)
+- `test_preprocessing.py` - image preprocessing and prediction functions
+- `test_model.py`, `test_integration_*.py`, `test_acceptance_*.py` - earlier
+  model, integration and acceptance tests
+
+# Continuous Integration
+
+`.github/workflows/ci.yml` runs on every push and pull request to `main`: it installs
+the dependencies on Python 3.11 and runs Pylint followed by pytest.
