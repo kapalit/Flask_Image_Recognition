@@ -25,9 +25,11 @@ jobs:
             requirements-dev.txt
 
       - name: Install dependencies
+        # --only-binary :all: installs wheels only, so no package setup.py
+        # scripts run during installation (SonarQube githubactions:S8541).
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          python -m pip install --only-binary :all: --upgrade pip
+          pip install --only-binary :all: -r requirements-dev.txt
 
       - name: Run Pylint
         run: pylint app.py model.py conftest.py test_*.py
