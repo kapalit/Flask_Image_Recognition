@@ -1,13 +1,20 @@
 """Flask web application that predicts hand-sign digits from uploaded images."""
 
 import os
+import secrets
 
 from flask import Flask, render_template, request
+from flask_wtf.csrf import CSRFProtect
 from PIL import UnidentifiedImageError
 
 from model import preprocess_img, predict_result
 
 app = Flask(__name__)
+# CSRF tokens are signed with SECRET_KEY. Use a fixed key from the environment in
+# deployment; fall back to a random per-process key so nothing secret is in the repo.
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+# Reject state-changing requests that lack a valid CSRF token (SonarQube python:S4502).
+csrf = CSRFProtect(app)
 
 ERROR_MESSAGE = "File cannot be processed."
 

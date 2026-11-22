@@ -1,17 +1,5 @@
 """Acceptance tests for invalid requests to the prediction route."""
 
-import pytest
-from app import app
-
-@pytest.fixture
-def client():
-    """
-    Fixture for the Flask test client.
-    - Purpose: Set up a test client for making requests to the Flask app during testing.
-    - Usage: Provides a `client` object to use for HTTP request simulations.
-    """
-    with app.test_client() as client:
-        yield client
 
 def test_acceptance_missing_file(client):
     """
