@@ -1,5 +1,7 @@
 """Flask web application that predicts hand-sign digits from uploaded images."""
 
+import os
+
 from flask import Flask, render_template, request
 from PIL import UnidentifiedImageError
 
@@ -32,5 +34,14 @@ def predict_image_file():
     return render_template("result.html", predictions=str(pred))
 
 
+def debug_enabled():
+    """Return True only when FLASK_DEBUG is explicitly set to "1" or "true".
+
+    The Werkzeug debugger allows arbitrary code execution, so it must never be
+    switched on by default (SonarQube rule python:S4507).
+    """
+    return os.environ.get("FLASK_DEBUG", "").strip().lower() in ("1", "true")
+
+
 if __name__ == "__main__":
-    app.run(port=9000, debug=True)
+    app.run(port=9000, debug=debug_enabled())
