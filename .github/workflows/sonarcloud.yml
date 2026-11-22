@@ -23,16 +23,14 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-dev.txt
+          cache-dependency-path: requirements-lock.txt
 
       - name: Install dependencies
-        # --only-binary :all: installs wheels only, so no package setup.py
-        # scripts run during installation (SonarQube githubactions:S8541).
+        # Installs only the exact versions and SHA-256 hashes recorded in
+        # requirements-lock.txt (githubactions:S8544) and only prebuilt wheels,
+        # so no package setup.py scripts run (githubactions:S8541).
         run: |
-          python -m pip install --only-binary :all: --upgrade pip
-          pip install --only-binary :all: -r requirements-dev.txt
+          pip install --only-binary :all: --require-hashes -r requirements-lock.txt
 
       - name: Run tests with coverage
         run: pytest -v --cov=app --cov=model --cov-report=xml:coverage.xml --cov-report=term
