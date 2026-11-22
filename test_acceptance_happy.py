@@ -1,71 +1,68 @@
-"""Acceptance tests for the normal upload-and-predict user flow."""
+"""Acceptance tests for the normal upload-and-predict user flow.
 
+These tests upload real images and check that a digit is rendered. The earlier
+versions posted fake bytes and only looked for the word "Prediction", which is
+also part of the error page heading, so they passed even when the app failed.
+"""
+
+import re
 from io import BytesIO
+from pathlib import Path
 
-def test_acceptance_successful_upload(client):
-    """
-    Test Case: Successful Upload of a Valid Image File
-    - Purpose: Ensure the application accepts a valid image file upload and provides a prediction.
-    - Method:
-        - Create a mock valid image file with minimal valid data.
-        - Simulate a POST request to the `/prediction` route with the file.
-        - Assert the response status code is 200.
-        - Verify that the response data includes the keyword 'Prediction.'
-    """
-    img_data = BytesIO(b"fake_image_data")  # Simulated valid image data
-    img_data.name = "test_image.jpg"
+from PIL import Image
 
-    response = client.post(
+SAMPLE_IMAGE = Path(__file__).parent / "test_images" / "3" / "Sign 3 (122).jpeg"
+ERROR_MESSAGE = b"File cannot be processed."
+PREDICTED_DIGIT = re.compile(rb'<h2 class="display-4 text-dark font-weight-bold">([0-9])</h2>')
+
+
+def _jpeg_upload(size=None):
+    """Return the sample hand-sign image as an in-memory JPEG, optionally resized."""
+    img = Image.open(SAMPLE_IMAGE).convert("RGB")
+    if size is not None:
+        img = img.resize(size)
+    buf = BytesIO()
+    img.save(buf, format="JPEG")
+    buf.seek(0)
+    return buf
+
+
+def _post_image(client, buf, name):
+    """POST an image to /prediction the way the upload form does."""
+    return client.post(
         "/prediction",
-        data={"file": (img_data, img_data.name)},
-        content_type="multipart/form-data"
+        data={"file": (buf, name)},
+        content_type="multipart/form-data",
     )
 
+
+def _assert_digit_predicted(response):
+    """The result page must show a single predicted digit and no error."""
     assert response.status_code == 200
-    assert b"Prediction" in response.data
+    assert ERROR_MESSAGE not in response.data
+    assert PREDICTED_DIGIT.search(response.data), "no predicted digit rendered"
+
+
+def test_acceptance_successful_upload(client):
+    """A valid hand-sign photo is accepted and a digit 0-9 is predicted."""
+    _assert_digit_predicted(_post_image(client, _jpeg_upload(), "sign.jpg"))
 
 
 def test_acceptance_valid_large_image(client):
-    """
-    Test Case: Upload of a Valid Large Image File
-    - Purpose: Check that large but valid image files are accepted and still
-      produce a prediction.
-    - Method:
-        - Create a mock large image file by repeating mock image data multiple times.
-        - Simulate a POST request to the `/prediction` route with the file.
-        - Assert the response status code is 200.
-        - Verify the presence of 'Prediction' in the response data.
-    """
-    img_data = BytesIO(b"fake_large_image_data" * 1000)  # Simulating a large image
-    img_data.name = "large_image.jpg"
-
-    response = client.post(
-        "/prediction",
-        data={"file": (img_data, img_data.name)},
-        content_type="multipart/form-data"
-    )
-
-    assert response.status_code == 200
-    assert b"Prediction" in response.data
+    """A large (2000x2000) but valid image is downscaled and still predicted."""
+    buf = _jpeg_upload(size=(2000, 2000))
+    assert buf.getbuffer().nbytes > 100_000  # really is a large upload
+    _assert_digit_predicted(_post_image(client, buf, "large_image.jpg"))
 
 
 def test_acceptance_valid_image_size_upload(client):
-    """
-    Test Case: Upload of an Image with a Specific Large Size
-    - Purpose: Validate system behavior with valid image files of a specific size or resolution.
-    - Method:
-        - Simulate an image upload with mock data representing a large image.
-        - POST the file to the `/prediction` route.
-        - Check that the status code is 200 and 'Prediction' exists in the response.
-    """
-    img_data = BytesIO(b"valid_image_data_of_large_size" * 1000)  # Simulating a specific size
-    img_data.name = "large_image.jpg"
+    """A non-square image of a different resolution is resized and predicted."""
+    _assert_digit_predicted(_post_image(client, _jpeg_upload(size=(640, 480)), "wide.jpg"))
 
-    response = client.post(
-        "/prediction",
-        data={"file": (img_data, img_data.name)},
-        content_type="multipart/form-data"
-    )
 
+def test_fake_image_bytes_show_error_not_prediction(client):
+    """Regression guard: non-image bytes must produce the error, never a digit."""
+    response = _post_image(client, BytesIO(b"fake_image_data"), "test_image.jpg")
     assert response.status_code == 200
-    assert b"Prediction" in response.data
+    assert ERROR_MESSAGE in response.data
+    assert not PREDICTED_DIGIT.search(response.data)
