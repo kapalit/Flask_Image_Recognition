@@ -19,3 +19,6 @@ Thumbs.db
 
 # Local Claude Code config
 .claude/
+
+# Coverage report generated in CI for SonarQube Cloud
+coverage.xml
